@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACADTRACK v1.0 — SI EAD NED</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0014;
+  --scan:#07000f;
+  --magenta:#ff00cc;
+  --cyan:#00ffee;
+  --yellow:#ffe600;
+  --green:#39ff14;
+  --orange:#ff6600;
+  --purple:#cc00ff;
+  --dim-cyan:rgba(0,255,238,.18);
+  --dim-mag:rgba(255,0,204,.14);
+  --ink:#e8e0ff;
+  --muted:#9988bb;
+  --grid:rgba(0,255,238,.06);
+  --panel:rgba(10,0,30,.82);
+  --panel2:rgba(18,0,44,.9);
+  --border-c:rgba(0,255,238,.35);
+  --border-m:rgba(255,0,204,.35);
+  --glow-c:0 0 8px var(--cyan),0 0 20px rgba(0,255,238,.4);
+  --glow-m:0 0 8px var(--magenta),0 0 20px rgba(255,0,204,.4);
+  --glow-g:0 0 8px var(--green),0 0 18px rgba(57,255,20,.4);
+  --glow-y:0 0 8px var(--yellow),0 0 18px rgba(255,230,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+
+/* CRT scanline overlay */
+body::before{
+  content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.22) 2px,rgba(0,0,0,.22) 4px);
+}
+/* grid bg */
+body::after{
+  content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+body{
+  font-family:'Share Tech Mono',monospace;
+  color:var(--ink);min-height:100vh;padding:24px;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%,rgba(204,0,255,.25),transparent),
+    radial-gradient(ellipse 60% 40% at 100% 110%,rgba(255,0,204,.2),transparent),
+    radial-gradient(ellipse 70% 50% at 0% 80%,rgba(0,255,238,.15),transparent),
+    var(--bg);
+  position:relative;
+}
+.wrap{max-width:1320px;margin:0 auto;position:relative;z-index:1}
+
+/* ── HEADER ── */
+header.top{
+  border:1px solid var(--border-c);background:var(--panel2);
+  padding:20px 24px;margin-bottom:22px;position:relative;overflow:hidden;
+  box-shadow:var(--glow-c);
+}
+header.top::before{
+  content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(90deg,transparent,transparent 60px,rgba(0,255,238,.03) 60px,rgba(0,255,238,.03) 61px);
+}
+.header-inner{display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;position:relative}
+.badge{
+  font-family:'Orbitron',sans-serif;font-weight:900;font-size:22px;
+  color:var(--cyan);text-shadow:var(--glow-c);letter-spacing:3px;
+  border:1px solid var(--border-c);padding:10px 16px;white-space:nowrap;flex-shrink:0;
+  background:rgba(0,255,238,.06);
+}
+.htext{flex:1;min-width:260px}
+.eyebrow{
+  font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:4px;
+  text-transform:uppercase;color:var(--magenta);text-shadow:var(--glow-m);margin-bottom:8px;
+}
+.htext h1{
+  font-family:'VT323',monospace;font-size:42px;line-height:1;
+  color:var(--cyan);text-shadow:var(--glow-c);letter-spacing:2px;
+}
+.htext .sub{
+  font-size:13px;color:var(--muted);margin-top:6px;letter-spacing:.5px;
+}
+.htext .crumb2{color:var(--yellow);text-shadow:var(--glow-y)}
+.corner{position:absolute;font-size:10px;color:var(--magenta);opacity:.6;letter-spacing:1px}
+.corner.tl{top:6px;left:8px} .corner.tr{top:6px;right:8px} .corner.bl{bottom:6px;left:8px} .corner.br{bottom:6px;right:8px}
+
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center;padding-top:4px}
+button.btn{
+  font-family:'Share Tech Mono',monospace;
+  border:1px solid var(--border-c);background:transparent;color:var(--cyan);
+  padding:10px 15px;font-size:13px;cursor:pointer;letter-spacing:1px;
+  display:inline-flex;align-items:center;gap:7px;transition:.15s;
+  text-shadow:var(--glow-c);box-shadow:inset 0 0 8px rgba(0,255,238,.05);
+}
+button.btn:hover{background:rgba(0,255,238,.12);box-shadow:var(--glow-c);border-color:var(--cyan)}
+button.btn.mag{border-color:var(--border-m);color:var(--magenta);text-shadow:var(--glow-m);box-shadow:inset 0 0 8px rgba(255,0,204,.05)}
+button.btn.mag:hover{background:rgba(255,0,204,.12);box-shadow:var(--glow-m);border-color:var(--magenta)}
+button.btn.grn{border-color:rgba(57,255,20,.4);color:var(--green);text-shadow:var(--glow-g)}
+button.btn.grn:hover{background:rgba(57,255,20,.12);box-shadow:var(--glow-g);border-color:var(--green)}
+button.btn.yel{border-color:rgba(255,230,0,.4);color:var(--yellow);text-shadow:var(--glow-y)}
+button.btn.yel:hover{background:rgba(255,230,0,.12);box-shadow:var(--glow-y);border-color:var(--yellow)}
+
+/* ── CARDS ── */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:22px}
+.card{
+  border:1px solid var(--border-c);background:var(--panel2);
+  padding:18px 20px;position:relative;
+}
+.card.c1{border-color:rgba(0,255,238,.4);box-shadow:var(--glow-c)}
+.card.c4{border-color:rgba(255,0,204,.4);box-shadow:var(--glow-m)}
+.card.c5{border-color:rgba(57,255,20,.4);box-shadow:var(--glow-g)}
+.card.c6{border-color:rgba(255,102,0,.45);box-shadow:0 0 8px var(--orange),0 0 18px rgba(255,102,0,.35)}
+.card .lab{font-family:'Orbitron',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.card.c1 .val{color:var(--cyan);text-shadow:var(--glow-c)}
+.card.c4 .val{color:var(--magenta);text-shadow:var(--glow-m)}
+.card.c5 .val{color:var(--green);text-shadow:var(--glow-g)}
+.card.c6 .val{color:var(--orange);text-shadow:0 0 8px var(--orange),0 0 18px rgba(255,102,0,.4)}
+.card .val{font-family:'VT323',monospace;font-size:56px;line-height:1}
+.card .sub{font-size:11px;color:var(--muted);margin-top:4px;letter-spacing:.5px}
+.blink{animation:blink 1.2s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ── CONTROLS ── */
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.search{
+  flex:1;min-width:220px;display:flex;align-items:center;gap:8px;
+  border:1px solid var(--border-c);background:var(--panel);padding:10px 14px;
+  box-shadow:var(--glow-c);
+}
+.search input{
+  background:none;border:none;outline:none;color:var(--cyan);width:100%;
+  font-size:14px;font-family:'Share Tech Mono',monospace;letter-spacing:.5px;
+  caret-color:var(--magenta);
+}
+.search input::placeholder{color:var(--muted)}
+.srch-icon{color:var(--cyan);text-shadow:var(--glow-c)}
+.legend{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);letter-spacing:.5px}
+.bar{width:120px;height:9px;background:linear-gradient(90deg,var(--green),var(--yellow),var(--orange),var(--magenta));border:1px solid var(--border-c)}
+.hint{
+  font-size:11px;color:var(--cyan);border:1px solid var(--border-c);
+  padding:4px 11px;letter-spacing:.5px;background:rgba(0,255,238,.05);
+}
+
+/* ── TABLE ── */
+.tablewrap{
+  border:1px solid var(--border-c);background:var(--panel);
+  box-shadow:var(--glow-c);overflow:hidden;
+}
+.tabletitle{
+  font-family:'Orbitron',sans-serif;font-size:11px;letter-spacing:3px;color:var(--cyan);
+  text-shadow:var(--glow-c);padding:10px 16px;border-bottom:1px solid var(--border-c);
+  background:rgba(0,255,238,.07);display:flex;justify-content:space-between;
+}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  background:rgba(0,255,238,.08);color:var(--cyan);text-align:left;
+  padding:11px 12px;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;
+  border-bottom:1px solid var(--border-c);white-space:nowrap;position:sticky;top:0;z-index:2;
+  font-family:'Orbitron',sans-serif;text-shadow:var(--glow-c);
+}
+tbody td{padding:5px 9px;border-bottom:1px solid rgba(0,255,238,.07);vertical-align:middle}
+tbody tr:hover{background:rgba(0,255,238,.05)}
+tbody tr:nth-child(even){background:rgba(204,0,255,.03)}
+.idx{color:var(--magenta);font-size:12px;text-align:center;width:36px;text-shadow:var(--glow-m)}
+
+td input.cell{
+  width:100%;background:transparent;border:1px solid transparent;
+  color:var(--ink);padding:7px 8px;font-size:13px;outline:none;transition:.12s;
+  font-family:'Share Tech Mono',monospace;letter-spacing:.3px;
+}
+td input.cell:hover{border-color:rgba(0,255,238,.25);background:rgba(0,255,238,.04)}
+td input.cell:focus{border-color:var(--magenta);background:rgba(255,0,204,.07);box-shadow:0 0 0 1px rgba(255,0,204,.25);color:var(--cyan);text-shadow:none}
+td.num input.cell{text-align:center}
+
+.col-nome{min-width:230px} .col-mat{width:110px} .col-score{width:90px} .col-acg{width:165px} .col-obs{min-width:210px}
+td input.cell.obs{color:var(--yellow);font-size:12px}
+td input.cell.obs::placeholder{color:rgba(153,136,187,.45)}
+tr.pend td:first-child{box-shadow:inset 3px 0 0 var(--orange)}
+.scorewrap{position:relative}
+.scoreflag{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:7px;height:7px;border-radius:50%}
+
+.acgcell{display:flex;align-items:center;gap:8px}
+.acgcell input{width:64px;text-align:center;font-weight:700;color:var(--yellow)!important;text-shadow:var(--glow-y)!important}
+.pill{flex:1;height:22px;position:relative;overflow:hidden;border:1px solid rgba(0,255,238,.2);background:#04001a}
+.pill .fill{position:absolute;inset:0;transition:.3s}
+.pill .pct{position:absolute;inset:0;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 0 6px rgba(0,0,0,.8);font-family:'Share Tech Mono',monospace}
+
+.del{
+  background:transparent;border:1px solid rgba(255,0,204,.3);color:var(--magenta);
+  width:30px;height:30px;cursor:pointer;font-size:14px;transition:.14s;
+  text-shadow:var(--glow-m);
+}
+.del:hover{background:rgba(255,0,204,.2);border-color:var(--magenta);box-shadow:var(--glow-m)}
+
+tfoot td{padding:12px;color:var(--muted);font-size:12px}
+.foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;color:var(--muted);font-size:11.5px;flex-wrap:wrap;gap:10px;letter-spacing:.5px}
+.foot #footInfo{color:var(--cyan);text-shadow:var(--glow-c)}
+
+.toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(150%);
+  background:var(--panel2);border:1px solid var(--cyan);color:var(--cyan);
+  padding:13px 24px;box-shadow:var(--glow-c);transition:.3s;z-index:10000;
+  font-size:13px;letter-spacing:1px;text-shadow:var(--glow-c);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+/* editable cue */
+[contenteditable="true"]{outline:none;transition:.14s;cursor:text}
+[contenteditable="true"]:hover{box-shadow:0 0 0 1px rgba(255,0,204,.5) inset}
+[contenteditable="true"]:focus{box-shadow:0 0 0 2px rgba(255,0,204,.6) inset;background:rgba(255,0,204,.07)}
+.htext h1[contenteditable],.eyebrow[contenteditable],.crumb2[contenteditable],.badge[contenteditable]{padding:1px 5px;margin:-1px -5px}
+
+/* flicker animation */
+@keyframes flicker{0%,100%{opacity:1}92%{opacity:1}93%{opacity:.7}94%{opacity:1}97%{opacity:.85}98%{opacity:1}}
+.htext h1{animation:flicker 7s infinite}
+
+/* VHS lines */
+.vhs-line{
+  position:absolute;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,rgba(255,0,204,.18),rgba(0,255,238,.25),transparent);
+  animation:vhs 8s linear infinite;pointer-events:none;
+}
+@keyframes vhs{0%{top:-4px;opacity:0}10%{opacity:1}90%{opacity:.7}100%{top:100%;opacity:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="vhs-line"></div>
+    <span class="corner tl">◤ SYS_ACTIVE</span>
+    <span class="corner tr">PUC MINAS · CEAD</span>
+    <span class="corner bl">▶ REC</span>
+    <span class="corner br" id="clock">00:00:00</span>
+    <div class="header-inner">
+      <div class="badge" contenteditable="true" spellcheck="false" title="Editável">NED</div>
+      <div class="htext">
+        <div class="eyebrow" contenteditable="true" spellcheck="false" title="Editável">Sistemas de Informação · EAD · NED_ACADTRACK_v1.0</div>
+        <h1 contenteditable="true" spellcheck="false" title="Editável">ACOMPANHAMENTO ACADÊMICO</h1>
+        <div class="sub">▸ <span class="crumb2" contenteditable="true" spellcheck="false" title="Editável">EIXO 7 — PESQUISA E EXPERIMENTAÇÃO EM SISTEMAS DE INFORMAÇÃO</span></div>
+      </div>
+      <div class="toolbar">
+        <button class="btn mag" onclick="addAluno()">＋ ALUNO</button>
+        <button class="btn" onclick="document.getElementById('imp').click()">⬆ IMPORTAR</button>
+        <button class="btn" onclick="exportCSV()">⬇ EXP_CSV</button>
+        <button class="btn" onclick="backupJSON()">🗎 BACKUP</button>
+        <button class="btn grn" onclick="salvar()">💾 SALVAR</button>
+        <input id="imp" type="file" accept=".csv,.json" hidden onchange="importFile(event)">
+      </div>
+    </div>
+  </header>
+
+  <div class="cards">
+    <div class="card c1">
+      <div class="lab">// TOTAL_ALUNOS</div>
+      <div class="val" id="kTotal">0</div>
+      <div class="sub">matriculados na turma</div>
+    </div>
+    <div class="card c4">
+      <div class="lab">// ACG_PENDENTE_HIGH</div>
+      <div class="val" id="kRisco">0</div>
+      <div class="sub">≥ 30h restantes <span class="blink">▮</span></div>
+    </div>
+    <div class="card c5">
+      <div class="lab">// ACG_CONCLUIDO</div>
+      <div class="val" id="kOk">0</div>
+      <div class="sub">≤ 5h restantes</div>
+    </div>
+    <div class="card c6">
+      <div class="lab">// PENDENCIAS_OBS</div>
+      <div class="val" id="kPend">0</div>
+      <div class="sub">alunos com observação <span class="blink">▮</span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="search">
+      <span class="srch-icon">▶</span>
+      <input id="busca" placeholder="BUSCAR POR NOME OU MATRÍCULA_" oninput="render()">
+    </div>
+    <div class="legend">
+      <span>40H</span><span class="bar"></span><span>0H</span>
+      <span class="hint">█ RISCO · █ ALERTA · █ OK</span>
+    </div>
+  </div>
+
+  <div class="tablewrap">
+    <div class="tabletitle">
+      <span>▸ DATABASE : ALUNOS</span>
+      <span id="tblCount">RECORDS: 0</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th class="idx">ID</th>
+          <th class="col-nome">Nome</th>
+          <th class="col-mat">Matrícula</th>
+          <th class="col-score">Projeto</th>
+          <th class="col-score">Comp_Comp</th>
+          <th class="col-score">Desafios</th>
+          <th class="col-acg">ACG_Restantes</th>
+          <th class="col-obs">Observações</th>
+          <th style="width:46px">DEL</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="foot">
+    <span id="footInfo">READY_</span>
+    <span class="hint">► TODOS OS CAMPOS EDITÁVEIS · CLIQUE PARA ALTERAR · USE SALVAR/BACKUP PARA PERSISTIR</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ACG_MAX = 40;
+const SEED = [{"nome":"André Fabiano de Andrade Lima","mat":"806512","pj":6,"cc":7,"dc":7,"acg":30,"obs":""},{"nome":"Antônio Rubens Oliveira Junqueira","mat":"807177","pj":6,"cc":7,"dc":7,"acg":37,"obs":""},{"nome":"Arthur Neves da Silveira","mat":"801991","pj":6,"cc":7,"dc":6,"acg":16,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Beatriz Fontainha de Castro","mat":"814923","pj":6,"cc":7,"dc":7,"acg":37,"obs":""},{"nome":"Beatriz Pereira da Costa","mat":"802000","pj":6,"cc":7,"dc":7,"acg":7,"obs":""},{"nome":"Bruno de Lacerda Tetzner","mat":"812148","pj":6,"cc":6,"dc":7,"acg":10,"obs":"NOTA LANÇADA FALTA 1 TEMA CC"},{"nome":"Denis Alves da Silva Leite","mat":"793454","pj":6,"cc":7,"dc":7,"acg":0,"obs":""},{"nome":"Felipe Paiva dos Santos","mat":"821350","pj":6,"cc":7,"dc":7,"acg":40,"obs":""},{"nome":"Isabela Gomes Lima","mat":"617203","pj":5,"cc":6,"dc":5,"acg":40,"obs":"FALTAM 2 TEMAS CC e 3 DC"},{"nome":"Italo Fideles Vieira do Nascimento","mat":"809993","pj":6,"cc":7,"dc":7,"acg":6,"obs":""},{"nome":"Jully Anne Roman Palhano Dutra","mat":"811602","pj":6,"cc":7,"dc":7,"acg":0,"obs":""},{"nome":"Lais Lara Ferreira dos Santos","mat":"813826","pj":6,"cc":7,"dc":7,"acg":40,"obs":""},{"nome":"Lucas Henrique Oliveira Prado","mat":"814507","pj":6,"cc":7,"dc":7,"acg":9,"obs":""},{"nome":"Lucas Morais Barcelos","mat":"801190","pj":6,"cc":6,"dc":7,"acg":40,"obs":"FALTAM 2 TEMAS CC e 1 DC"},{"nome":"Lucas Peres Dias Costa","mat":"794320","pj":6,"cc":7,"dc":7,"acg":20,"obs":""},{"nome":"Luigi Von Blucher Mezzogori","mat":"825594","pj":6,"cc":7,"dc":7,"acg":40,"obs":""},{"nome":"Odair Cordeiro Marra","mat":"887802","pj":6,"cc":7,"dc":7,"acg":0,"obs":""},{"nome":"Patrick Magalhães Robaina","mat":"740621","pj":6,"cc":7,"dc":6,"acg":10,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Pedro Henrique Nunes Alves","mat":"813805","pj":6,"cc":7,"dc":7,"acg":10,"obs":""},{"nome":"Pedro Vinicius Ribeiro Teixeira Justino","mat":"809397","pj":6,"cc":6,"dc":6,"acg":40,"obs":""},{"nome":"Ramir Aguiar Ribeiro Junior","mat":"742368","pj":6,"cc":2,"dc":2,"acg":20,"obs":""},{"nome":"Ricardo de Andrade","mat":"805446","pj":6,"cc":6,"dc":6,"acg":40,"obs":"FALTAM 2 TEMAS CC e 2 DC"},{"nome":"Samuel Lacerda Borges","mat":"810114","pj":6,"cc":7,"dc":7,"acg":40,"obs":""},{"nome":"Sávio Sérgio Pereira da Silva","mat":"807274","pj":6,"cc":7,"dc":7,"acg":40,"obs":""},{"nome":"Victor Alexandre Ferreira Santos","mat":"814735","pj":6,"cc":7,"dc":7,"acg":24,"obs":""},{"nome":"Victor Henrique Pereira","mat":"812252","pj":6,"cc":7,"dc":7,"acg":3,"obs":""},{"nome":"Victor Hugo Vasquez da Silva","mat":"811519","pj":6,"cc":7,"dc":7,"acg":20,"obs":""},{"nome":"Vinícius Pereira Coelho","mat":"810275","pj":6,"cc":6,"dc":6,"acg":10,"obs":""},{"nome":"Vitor Alberto Gonçalves Cavaco","mat":"637610","pj":6,"cc":7,"dc":7,"acg":19,"obs":""},{"nome":"Andre Murilo Neves Vasconcelos","mat":"642384","pj":null,"cc":1,"dc":1,"acg":40,"obs":""},{"nome":"André Ramos","mat":"801111","pj":6,"cc":7,"dc":7,"acg":15,"obs":""},{"nome":"Carlos Eduardo de Lima Assis","mat":"823452","pj":6,"cc":4,"dc":2,"acg":40,"obs":"FALTAM 4 TEMAS CC e 2 DC"},{"nome":"Daniela Sofia Fernandes de Assis","mat":"742427","pj":6,"cc":6,"dc":6,"acg":40,"obs":""},{"nome":"Déborah Thaís de Matos","mat":"836632","pj":6,"cc":7,"dc":6,"acg":23,"obs":"FALTA 1 TEMA CC e 2 DC"},{"nome":"Gabriel Amorim Santos Maia","mat":"813139","pj":6,"cc":5,"dc":6,"acg":40,"obs":""},{"nome":"Gabriel Pangracio Azevedo","mat":"820033","pj":6,"cc":7,"dc":7,"acg":20,"obs":""},{"nome":"Gabriela Moreira Bastos","mat":"822325","pj":6,"cc":7,"dc":7,"acg":25,"obs":""},{"nome":"Gilberto Modesto","mat":"810751","pj":6,"cc":7,"dc":7,"acg":39,"obs":""},{"nome":"Giulia Fernandes Donato de Mattos","mat":"819308","pj":6,"cc":6,"dc":6,"acg":38,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Guilherme Lanza Japolino","mat":"729655","pj":6,"cc":8,"dc":7,"acg":35,"obs":""},{"nome":"Gustavo Gino Pereira","mat":"822008","pj":6,"cc":5,"dc":6,"acg":35,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Isabella Carolina de Almeida Siqueira Damião","mat":"867178","pj":2,"cc":1,"dc":1,"acg":7,"obs":""},{"nome":"Isadora Aparecida Cardoso Carvalho","mat":"824539","pj":6,"cc":7,"dc":7,"acg":3,"obs":""},{"nome":"Isadora Gomes Murta","mat":"822275","pj":6,"cc":5,"dc":6,"acg":40,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Jaime Bispo dos Santos","mat":"782158","pj":6,"cc":8,"dc":7,"acg":40,"obs":""},{"nome":"João Gabriel Galdino de Oliveira","mat":"808444","pj":6,"cc":5,"dc":6,"acg":40,"obs":""},{"nome":"Júnio dos Reis Firmino","mat":"814918","pj":6,"cc":7,"dc":7,"acg":40,"obs":""},{"nome":"Lucas Brandão Guedes","mat":"809690","pj":6,"cc":7,"dc":7,"acg":38,"obs":""},{"nome":"Maria Eduarda Sousa","mat":"813040","pj":6,"cc":6,"dc":6,"acg":40,"obs":""},{"nome":"Nata Gabriel Teixeira","mat":"825068","pj":6,"cc":7,"dc":7,"acg":18,"obs":""},{"nome":"Rafael Fernandes Marques","mat":"813203","pj":6,"cc":6,"dc":6,"acg":37,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Rayane Paiva Reginaldo","mat":"635383","pj":6,"cc":7,"dc":7,"acg":0,"obs":""},{"nome":"Rhafael Hector de Siqueira Damião","mat":"801053","pj":6,"cc":7,"dc":7,"acg":40,"obs":""},{"nome":"Rômulo Ferraz Chaves","mat":"806484","pj":6,"cc":7,"dc":7,"acg":26,"obs":""},{"nome":"Samuel Marques Pereira","mat":"788623","pj":6,"cc":6,"dc":6,"acg":40,"obs":""},{"nome":"Tales Hein","mat":"790462","pj":6,"cc":5,"dc":5,"acg":40,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Thais Camila Goncalves Costa","mat":"825320","pj":6,"cc":6,"dc":8,"acg":40,"obs":""},{"nome":"Thiago Ferreira de Oliveira","mat":"803949","pj":6,"cc":7,"dc":7,"acg":10,"obs":""},{"nome":"Vitor Antonio Malafaya da Cruz","mat":"676476","pj":6,"cc":6,"dc":6,"acg":30,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Warley Junio Martins Vieira","mat":"813266","pj":6,"cc":6,"dc":6,"acg":40,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Augusto Gabriel Lomba Pires","mat":"815416","pj":6,"cc":6,"dc":8,"acg":20,"obs":"FALTAM 2 TEMAS de CC"},{"nome":"Helberth Alencar Diniz Martins","mat":"812345","pj":6,"cc":7,"dc":7,"acg":18,"obs":""},{"nome":"Ian Benevides de Abreu","mat":"806066","pj":6,"cc":7,"dc":7,"acg":40,"obs":""},{"nome":"Leonardo Almeida Braga","mat":"651222","pj":6,"cc":3,"dc":4,"acg":40,"obs":"FALTAM 5 TEMAS de CC e 4 de DC"},{"nome":"Lucas de Souza Nassif Lemos","mat":"815881","pj":6,"cc":6,"dc":6,"acg":10,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Luiz Henrique Santos de Andrade","mat":"811656","pj":6,"cc":6,"dc":6,"acg":40,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Matheus Carlos Fraga dos Santos","mat":"800262","pj":6,"cc":6,"dc":6,"acg":40,"obs":"FALTA LANÇAR NOTA CC e DC"},{"nome":"Nathan de Mesquita dos Santos","mat":"803741","pj":6,"cc":7,"dc":7,"acg":30,"obs":""},{"nome":"Rafael Moreira Arantes de Castro","mat":"799003","pj":6,"cc":7,"dc":7,"acg":40,"obs":""},{"nome":"Sophia Thais Gibim Coelho","mat":"686907","pj":6,"cc":6,"dc":7,"acg":20,"obs":"FALTA 1 TEMA CC"},{"nome":"Vitoria Lorrayne dos Santos Soares","mat":"801550","pj":6,"cc":7,"dc":7,"acg":15,"obs":""},{"nome":"Wellington dos Santos Oliveira","mat":"793195","pj":5,"cc":7,"dc":7,"acg":40,"obs":"FALTA LANÇAR NOTA CC e DC e PJ EIXO 1"}];
+let alunos = SEED.map(normalize);
+
+// clock
+function tick(){
+  const n=new Date();
+  document.getElementById('clock').textContent=
+    [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+}
+tick(); setInterval(tick,1000);
+
+function normalize(r){
+  return {
+    id: crypto.randomUUID ? crypto.randomUUID() : 'id'+Math.random().toString(36).slice(2),
+    nome:r.nome??'', mat:r.mat??'', obs:String(r.obs??'').trim(),
+    pj:numOrNull(r.pj), cc:numOrNull(r.cc), dc:numOrNull(r.dc), acg:numOrNull(r.acg)
+  };
+}
+function numOrNull(v){if(v===''||v===null||v===undefined)return null;const n=Number(v);return isNaN(n)?null:Math.round(n);}
+
+function acgColor(v){
+  const val=v===null?ACG_MAX:Math.max(0,Math.min(ACG_MAX,v));
+  const t=val/ACG_MAX; // 1=danger 0=ok
+  // 80s palette: green -> yellow -> orange -> magenta
+  if(t<0.25) return '#39ff14';
+  if(t<0.50) return '#ffe600';
+  if(t<0.75) return '#ff6600';
+  return '#ff00cc';
+}
+function scoreFlag(v){
+  if(v===null) return 'transparent';
+  if(v<=2) return '#ff00cc';
+  if(v<=3) return '#ffe600';
+  return '#39ff14';
+}
+
+function render(){
+  const q=document.getElementById('busca').value.trim().toLowerCase();
+  const tb=document.getElementById('tbody');
+  tb.innerHTML='';
+  let shown=0;
+  alunos.forEach((a,i)=>{
+    if(q && !(a.nome.toLowerCase().includes(q)||String(a.mat).toLowerCase().includes(q)||String(a.obs).toLowerCase().includes(q))) return;
+    shown++;
+    const tr=document.createElement('tr');
+    if(a.obs)tr.classList.add('pend');
+    tr.innerHTML=`
+      <td class="idx">${String(i+1).padStart(3,'0')}</td>
+      <td><input class="cell" value="${esc(a.nome)}" oninput="upd('${a.id}','nome',this.value)" placeholder="NOME DO ALUNO"></td>
+      <td><input class="cell" value="${esc(a.mat)}" oninput="upd('${a.id}','mat',this.value)" placeholder="000000"></td>
+      ${scoreCell(a,'pj')}
+      ${scoreCell(a,'cc')}
+      ${scoreCell(a,'dc')}
+      <td class="col-acg">${acgCell(a)}</td>
+      <td class="col-obs"><input class="cell obs" value="${esc(a.obs)}" oninput="updObs('${a.id}',this.value,this.closest('tr'))" placeholder="SEM PENDÊNCIA_"></td>
+      <td style="text-align:center"><button class="del" title="Excluir" onclick="del('${a.id}')">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  document.getElementById('footInfo').textContent=`STATUS: ${shown} DE ${alunos.length} REGISTROS EXIBIDOS_`;
+  document.getElementById('tblCount').textContent=`RECORDS: ${alunos.length}`;
+  updKpis();
+}
+function scoreCell(a,k){
+  const v=a[k];
+  return `<td class="num scorewrap">
+    <input class="cell" type="number" step="1" min="0" max="10" value="${v===null?'':v}"
+      oninput="updNum('${a.id}','${k}',this.value)" placeholder="—">
+    <span class="scoreflag" style="background:${scoreFlag(v)};box-shadow:0 0 5px ${scoreFlag(v)}"></span></td>`;
+}
+function acgCell(a){
+  const v=a.acg;
+  const col=acgColor(v);
+  return `<div class="acgcell">
+    <input class="cell" type="number" step="1" min="0" max="${ACG_MAX}" value="${v===null?'':v}" oninput="updNum('${a.id}','acg',this.value)" placeholder="${ACG_MAX}">
+    <div class="pill">
+      <div class="fill" style="background:${col};opacity:.85;box-shadow:0 0 10px ${col}"></div>
+      <div class="pct">${v===null?'N/D':(v+'H')}</div>
+    </div></div>`;
+}
+
+function esc(s){return String(s).replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function upd(id,k,val){const a=alunos.find(x=>x.id===id);if(a)a[k]=val;}
+function updObs(id,val,tr){const a=alunos.find(x=>x.id===id);if(!a)return;a.obs=val;tr.classList.toggle('pend',!!val.trim());updKpis();}
+function updNum(id,k,val){const a=alunos.find(x=>x.id===id);if(a)a[k]=val===''?null:Math.round(Number(val));render();}
+
+function updKpis(){
+  document.getElementById('kTotal').textContent=alunos.length;
+  document.getElementById('kRisco').textContent=alunos.filter(a=>a.acg!==null&&a.acg>=30).length;
+  document.getElementById('kOk').textContent=alunos.filter(a=>a.acg!==null&&a.acg<=5).length;
+  document.getElementById('kPend').textContent=alunos.filter(a=>a.obs&&a.obs.trim()).length;
+}
+
+function addAluno(){
+  alunos.unshift(normalize({nome:'',mat:'',pj:null,cc:null,dc:null,acg:ACG_MAX,obs:''}));
+  document.getElementById('busca').value='';
+  render();
+  const first=document.querySelector('#tbody tr input.cell');if(first)first.focus();
+  toast('>> NOVO REGISTRO INSERIDO NO TOPO');
+}
+function del(id){
+  const a=alunos.find(x=>x.id===id);
+  if(!confirm(`DELETE "${a&&a.nome?a.nome:'ESTE ALUNO'}"?`))return;
+  alunos=alunos.filter(x=>x.id!==id);render();toast('>> REGISTRO DELETADO');
+}
+
+function exportCSV(){
+  const head=['Nome','Matricula','Projeto','Competencias Comportamentais','Desafios Contemporaneos','ACG restantes','Observacoes'];
+  const rows=alunos.map(a=>[a.nome,a.mat,fmt(a.pj),fmt(a.cc),fmt(a.dc),fmt(a.acg),a.obs||'']);
+  const csv=[head,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  download('\ufeff'+csv,'acompanhamento_SI_EAD_eixo7.csv','text/csv;charset=utf-8');
+  toast('>> EXPORT_CSV: OK');
+}
+function fmt(v){return v===null?'':v;}
+function headerData(){
+  return {
+    sigla:document.querySelector('.badge').innerText.trim(),
+    curso:document.querySelector('.eyebrow').innerText.trim(),
+    titulo:document.querySelector('.htext h1').innerText.trim(),
+    eixo:document.querySelector('.crumb2').innerText.trim()
+  };
+}
+function backupJSON(){
+  const h=headerData();
+  const data={...h,gerado:new Date().toISOString(),alunos:alunos.map(({id,...r})=>r)};
+  download(JSON.stringify(data,null,2),'backup_SI_EAD_eixo7.json','application/json');
+  toast('>> BACKUP_JSON: WRITE_OK');
+}
+function salvar(){backupJSON();toast('>> SAVE: COMPLETE');}
+function download(content,name,type){
+  const b=new Blob([content],{type});const u=URL.createObjectURL(b);
+  const a=document.createElement('a');a.href=u;a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(u),1500);
+}
+function importFile(e){
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      let recs;
+      if(f.name.toLowerCase().endsWith('.json')){
+        const j=JSON.parse(rd.result);recs=Array.isArray(j)?j:(j.alunos||[]);
+        if(!Array.isArray(j)){
+          if(j.sigla)document.querySelector('.badge').innerText=j.sigla;
+          if(j.curso)document.querySelector('.eyebrow').innerText=j.curso;
+          if(j.titulo)document.querySelector('.htext h1').innerText=j.titulo;
+          if(j.eixo)document.querySelector('.crumb2').innerText=j.eixo;
+        }
+      }else{recs=parseCSV(rd.result);}
+      if(!recs.length){toast('>> ERR: NENHUM REGISTRO');return;}
+      if(confirm(`IMPORT ${recs.length} REGISTROS? SUBSTITUIR LISTA ATUAL?`)){
+        alunos=recs.map(normalize);render();toast(`>> IMPORT: ${recs.length} REGISTROS_OK`);
+      }
+    }catch(err){toast('>> IMPORT_ERR: '+err.message);}
+    e.target.value='';
+  };
+  rd.readAsText(f,'utf-8');
+}
+function parseCSV(txt){
+  txt=txt.replace(/^\ufeff/,'');
+  const lines=txt.split(/\r?\n/).filter(l=>l.trim());if(!lines.length)return[];
+  // detecta delimitador: ; (Excel PT-BR) ou ,
+  const d=(lines[0].match(/;/g)||[]).length>=(lines[0].match(/,/g)||[]).length?';':',';
+  const split=l=>{const o=[];let c='',q=false;for(let i=0;i<l.length;i++){const ch=l[i];
+    if(q){if(ch=='"'){if(l[i+1]=='"'){c+='"';i++}else q=false}else c+=ch}
+    else{if(ch=='"')q=true;else if(ch==d){o.push(c);c=''}else c+=ch}}o.push(c);return o;};
+  const H=split(lines[0]).map(h=>h.trim().toLowerCase());
+  const find=(...keys)=>H.findIndex(h=>keys.some(k=>h.includes(k)));
+  const iN=find('nome'),iM=find('matric','mat'),iP=find('projeto','pj'),
+    iC=find('comportamental','comp','cc'),iD=find('desafio','dc'),iA=find('acg','pendent','restant'),
+    iO=find('observa','obs');
+  return lines.slice(1).map(l=>{const c=split(l);
+    return{nome:iN>=0?c[iN]:'',mat:iM>=0?c[iM]:'',pj:iP>=0?c[iP]:null,
+      cc:iC>=0?c[iC]:null,dc:iD>=0?c[iD]:null,acg:iA>=0?c[iA]:null,
+      obs:iO>=0?(c[iO]||''):(c.length>6?(c[6]||''):'')};})
+    .filter(r=>r.nome||r.mat);
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);}
+
+render();
+</script>
+</body>
+</html>
